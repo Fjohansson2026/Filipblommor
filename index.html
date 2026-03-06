@@ -1,97 +1,125 @@
+```html
 <!DOCTYPE html>
-<html lang="sv">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Blomigenkänning</title>
+<title>SUPERMEGA BLOM-DETEKTOR 9000</title>
+
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
 
 <style>
 body{
-    font-family: Arial;
+    background: linear-gradient(45deg, pink, yellow, cyan);
+    font-family: Comic Sans MS;
     text-align:center;
-    background:#f2f2f2;
+}
+
+#låda{
+    border:5px dashed purple;
+    background:white;
+    padding:20px;
+    width:350px;
+    margin:auto;
+    transform:rotate(-2deg);
 }
 
 #status{
-    border:2px solid black;
-    padding:10px;
-    width:300px;
-    margin:20px auto;
-    background:white;
+    font-size:20px;
+    color:red;
 }
 
-#result{
-    font-size:20px;
+#resultat{
+    font-size:25px;
+    color:blue;
     margin-top:20px;
 }
 </style>
+
 </head>
 
 <body>
 
-<h1>Blomigenkänning</h1>
-<h3>Ditt Förnamn I – TE22</h3>
+<h1>🌼 BLOM-GISSAREN 9000 🌼</h1>
+<h3>DITT NAMN H – TE22</h3>
+
+<div id="låda">
 
 <div id="status">
-Status: Laddar modell...
+🤖 Robot hjärna startar...
 </div>
 
-<input type="file" id="imageUpload" accept="image/*">
+<br>
+
+<input type="file" id="mystiskBildKnapp">
 
 <br><br>
 
-<img id="preview" width="224">
+<img id="bildsak" width="224">
 
-<div id="result"></div>
+<div id="resultat">
+Ingen blomma analyserad än 🌱
+</div>
+
+</div>
 
 <script>
 
-let model;
+let superMegaBlomHjärna;
 
-async function loadModel(){
+async function startaRobotHjärna(){
+    document.getElementById("status").innerHTML = "🧠 Laddar AI-hjärna...";
+    
+    superMegaBlomHjärna = await tf.loadLayersModel("tfjs_model/model.json");
 
-    model = await tf.loadLayersModel("tfjs_model/model.json");
-
-    document.getElementById("status").innerHTML =
-    "Status: Modell laddad ✅";
+    document.getElementById("status").innerHTML = "✅ AI-hjärnan är redo att döma dina blommor";
 }
 
-loadModel();
+startaRobotHjärna();
 
-document.getElementById("imageUpload").addEventListener("change", async function(event){
+document.getElementById("mystiskBildKnapp").addEventListener("change", function(event){
 
-    const file = event.target.files[0];
-    const img = document.getElementById("preview");
+    const fil = event.target.files[0];
+    const bild = document.getElementById("bildsak");
 
-    img.src = URL.createObjectURL(file);
+    bild.src = URL.createObjectURL(fil);
 
-    img.onload = async function(){
+    bild.onload = async function(){
 
-        let tensor = tf.browser.fromPixels(img)
+        let superTensorGrej = tf.browser.fromPixels(bild)
         .resizeNearestNeighbor([224,224])
         .toFloat()
         .div(255)
         .expandDims();
 
-        let prediction = await model.predict(tensor).data();
+        let mystiskaSiffror = await superMegaBlomHjärna.predict(superTensorGrej).data();
 
-        let max = Math.max(...prediction);
-        let index = prediction.indexOf(max);
+        let största = Math.max(...mystiskaSiffror);
+        let index = mystiskaSiffror.indexOf(största);
 
-        let labels = ["Daisy","Dandelion","Rose","Sunflower","Tulip"];
+        let blomNamnLista = [
+            "🌼 Daisy",
+            "🌻 Sunflower",
+            "🌹 Rose",
+            "🌷 Tulip",
+            "🌼 Dandelion"
+        ];
 
-        let confidence = (max * 100).toFixed(2);
+        let procent = (största * 100).toFixed(2);
 
-        let text = labels[index] + " (" + confidence + "%)";
+        let text = "🤯 Jag tror det är: " + blomNamnLista[index] + " (" + procent + "%)";
 
-        if(max < 0.5){
-            text += " – Mycket osäker";
+        if(största < 0.5){
+            text += " 🚨 MYCKET OSÄKER";
         }
-        else if(max < 0.75){
-            text += " – Osäker";
+        else if(största < 0.75){
+            text += " 🤔 lite osäker";
+        }
+        else{
+            text += " 😎 ganska säker";
         }
 
-        document.getElementById("result").innerHTML = text;
+        document.getElementById("resultat").innerHTML = text;
+
     }
 
 });
@@ -100,3 +128,4 @@ document.getElementById("imageUpload").addEventListener("change", async function
 
 </body>
 </html>
+```
