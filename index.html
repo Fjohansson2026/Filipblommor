@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<title>Blomigenkänning</title>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+
+<style>
+body{
+    font-family: Arial;
+    text-align:center;
+    background:#f2f2f2;
+}
+
+#status{
+    border:2px solid black;
+    padding:10px;
+    width:300px;
+    margin:20px auto;
+    background:white;
+}
+
+#result{
+    font-size:20px;
+    margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Blomigenkänning</h1>
+<h3>Ditt Förnamn I – TE22</h3>
+
+<div id="status">
+Status: Laddar modell...
+</div>
+
+<input type="file" id="imageUpload" accept="image/*">
+
+<br><br>
+
+<img id="preview" width="224">
+
+<div id="result"></div>
+
+<script>
+
+let model;
+
+async function loadModel(){
+
+    model = await tf.loadLayersModel("tfjs_model/model.json");
+
+    document.getElementById("status").innerHTML =
+    "Status: Modell laddad ✅";
+}
+
+loadModel();
+
+document.getElementById("imageUpload").addEventListener("change", async function(event){
+
+    const file = event.target.files[0];
+    const img = document.getElementById("preview");
+
+    img.src = URL.createObjectURL(file);
+
+    img.onload = async function(){
+
+        let tensor = tf.browser.fromPixels(img)
+        .resizeNearestNeighbor([224,224])
+        .toFloat()
+        .div(255)
+        .expandDims();
+
+        let prediction = await model.predict(tensor).data();
+
+        let max = Math.max(...prediction);
+        let index = prediction.indexOf(max);
+
+        let labels = ["Daisy","Dandelion","Rose","Sunflower","Tulip"];
+
+        let confidence = (max * 100).toFixed(2);
+
+        let text = labels[index] + " (" + confidence + "%)";
+
+        if(max < 0.5){
+            text += " – Mycket osäker";
+        }
+        else if(max < 0.75){
+            text += " – Osäker";
+        }
+
+        document.getElementById("result").innerHTML = text;
+    }
+
+});
+
+</script>
+
+</body>
+</html>
