@@ -1,131 +1,285 @@
-```html
 <!DOCTYPE html>
-<html>
+<html lang="sv">
 <head>
 <meta charset="UTF-8">
-<title>SUPERMEGA BLOM-DETEKTOR 9000</title>
-
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SUPER KONSTIG BLOM AI</title>
+ 
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+ 
 <style>
+ 
 body{
-    background: linear-gradient(45deg, pink, yellow, cyan);
-    font-family: Comic Sans MS;
-    text-align:center;
+  font-family: Comic Sans MS, cursive;
+  background: linear-gradient(45deg, red, orange, yellow, green, blue, purple);
+  background-size: 600% 600%;
+  animation: crazybg 8s infinite alternate;
+  overflow-x:hidden;
+  text-align:center;
 }
-
-#låda{
-    border:5px dashed purple;
-    background:white;
-    padding:20px;
-    width:350px;
-    margin:auto;
-    transform:rotate(-2deg);
+ 
+@keyframes crazybg{
+  0%{background-position:0% 50%}
+  100%{background-position:100% 50%}
 }
-
-#status{
-    font-size:20px;
-    color:red;
+ 
+h1{
+  font-size:60px;
+  animation: spin 5s linear infinite;
 }
-
-#resultat{
-    font-size:25px;
-    color:blue;
-    margin-top:20px;
+ 
+@keyframes spin{
+  from{transform:rotate(0deg)}
+  to{transform:rotate(360deg)}
 }
+ 
+header{
+  padding:30px;
+}
+ 
+main{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  padding:30px;
+}
+ 
+.panel{
+  border:5px dashed black;
+  padding:20px;
+  background:white;
+  animation:wobble 3s infinite;
+}
+ 
+@keyframes wobble{
+  0%{transform:rotate(-2deg)}
+  50%{transform:rotate(2deg)}
+  100%{transform:rotate(-2deg)}
+}
+ 
+.drop-zone{
+  border:6px dotted red;
+  padding:40px;
+  cursor:pointer;
+  background:yellow;
+  font-size:20px;
+  animation:jump 2s infinite;
+}
+ 
+@keyframes jump{
+  0%{transform:translateY(0)}
+  50%{transform:translateY(-10px)}
+  100%{transform:translateY(0)}
+}
+ 
+button{
+  margin-top:20px;
+  padding:15px 30px;
+  font-size:20px;
+  background:lime;
+  border:none;
+  cursor:pointer;
+  animation:buttonspin 4s linear infinite;
+}
+ 
+@keyframes buttonspin{
+  0%{transform:rotate(0)}
+  50%{transform:rotate(3deg)}
+  100%{transform:rotate(0)}
+}
+ 
+img{
+  max-width:100%;
+}
+ 
+.result{
+  font-size:40px;
+  animation:resultspin 6s infinite linear;
+}
+ 
+@keyframes resultspin{
+  from{transform:rotate(-5deg)}
+  to{transform:rotate(5deg)}
+}
+ 
+.bar{
+  height:20px;
+  background:green;
+  transition:width 1s;
+}
+ 
+.score{
+  margin:10px;
+}
+ 
 </style>
-
 </head>
-
+ 
 <body>
-
-<h1>🌼 BLOM-GISSAREN 9000 🌼</h1>
-<h3>DITT NAMN H – TE22</h3>
-
-<div id="låda">
-
-<div id="status">
-🤖 Robot hjärna startar...
+ 
+<header>
+<h1>🌸 BLOM AI GALENSKAP 🌸</h1>
+<p>TensorFlow.js blomklassificerare</p>
+</header>
+ 
+<main>
+ 
+<div class="panel">
+ 
+<h2>LADDA UPP BLOMMA</h2>
+ 
+<div class="drop-zone" id="dropZone">
+KLICK ELLER SLÄPP BILD HÄR 🤪
 </div>
-
+ 
+<input type="file" id="fileInput" accept="image/*" style="display:none">
+ 
 <br>
-
-<input type="file" id="mystiskBildKnapp">
-
-<br><br>
-
-<img id="bildsak" width="224">
-
-<div id="resultat">
-Ingen blomma analyserad än 🌱
+ 
+<img id="preview">
+ 
+<br>
+ 
+<button id="btnAnalyze">ANALYSERA BLOMMA</button>
+ 
 </div>
-
+ 
+<div class="panel">
+ 
+<h2>RESULTAT</h2>
+ 
+<div class="result" id="flowerName">---</div>
+ 
+<div id="confPct"></div>
+ 
+<div style="background:#ccc;height:20px;width:100%">
+<div class="bar" id="confBar"></div>
 </div>
-
+ 
+<div id="scoreRows"></div>
+ 
+</div>
+ 
+</main>
+ 
 <script>
-
-let superMegaBlomHjärna;
-
-async function startaRobotHjärna(){
-    document.getElementById("status").innerHTML = "🧠 Laddar AI-hjärna...";
-    
-    superMegaBlomHjärna = await tf.loadLayersModel("tfjs_model/model.json");
-
-    document.getElementById("status").innerHTML = "✅ AI-hjärnan är redo att döma dina blommor";
+ 
+const CLASS_NAMES = ['Daisy','Dandelion','Rose','Sunflower','Tulip'];
+ 
+const SV = {
+'Daisy':'Prästkrage',
+'Dandelion':'Maskros',
+'Rose':'Ros',
+'Sunflower':'Solros',
+'Tulip':'Tulpan'
+};
+ 
+const MODEL_URL='tfjs_model/model.json';
+ 
+let model=null;
+ 
+async function loadModel(){
+try{
+model=await tf.loadLayersModel(MODEL_URL);
+}catch(e){
+alert("kunde inte ladda modell 😭");
 }
-
-startaRobotHjärna();
-
-document.getElementById("mystiskBildKnapp").addEventListener("change", function(event){
-
-    const fil = event.target.files[0];
-    const bild = document.getElementById("bildsak");
-
-    bild.src = URL.createObjectURL(fil);
-
-    bild.onload = async function(){
-
-        let superTensorGrej = tf.browser.fromPixels(bild)
-        .resizeNearestNeighbor([224,224])
-        .toFloat()
-        .div(255)
-        .expandDims();
-
-        let mystiskaSiffror = await superMegaBlomHjärna.predict(superTensorGrej).data();
-
-        let största = Math.max(...mystiskaSiffror);
-        let index = mystiskaSiffror.indexOf(största);
-
-        let blomNamnLista = [
-            "🌼 Daisy",
-            "🌻 Sunflower",
-            "🌹 Rose",
-            "🌷 Tulip",
-            "🌼 Dandelion"
-        ];
-
-        let procent = (största * 100).toFixed(2);
-
-        let text = "🤯 Jag tror det är: " + blomNamnLista[index] + " (" + procent + "%)";
-
-        if(största < 0.5){
-            text += " 🚨 MYCKET OSÄKER";
-        }
-        else if(största < 0.75){
-            text += " 🤔 lite osäker";
-        }
-        else{
-            text += " 😎 ganska säker";
-        }
-
-        document.getElementById("resultat").innerHTML = text;
-
-    }
-
+}
+ 
+const dropZone=document.getElementById("dropZone");
+const fileInput=document.getElementById("fileInput");
+const preview=document.getElementById("preview");
+const btnAnalyze=document.getElementById("btnAnalyze");
+ 
+dropZone.onclick=()=>fileInput.click();
+ 
+fileInput.onchange=e=>{
+handleFile(e.target.files[0]);
+};
+ 
+dropZone.ondrop=e=>{
+e.preventDefault();
+handleFile(e.dataTransfer.files[0]);
+};
+ 
+dropZone.ondragover=e=>e.preventDefault();
+ 
+function handleFile(file){
+const reader=new FileReader();
+reader.onload=e=>{
+preview.src=e.target.result;
+};
+reader.readAsDataURL(file);
+}
+ 
+btnAnalyze.onclick=async()=>{
+ 
+if(!model){
+alert("modell laddar fortfarande");
+return;
+}
+ 
+const tensor=tf.tidy(()=>{
+return tf.browser.fromPixels(preview)
+.resizeBilinear([224,224])
+.toFloat()
+.div(tf.scalar(255))
+.expandDims(0);
 });
-
+ 
+const predictions=await model.predict(tensor).data();
+tensor.dispose();
+ 
+const scores=Array.from(predictions);
+ 
+const indexed=scores.map((s,i)=>({name:CLASS_NAMES[i],score:s}))
+.sort((a,b)=>b.score-a.score);
+ 
+showResults(indexed);
+ 
+};
+ 
+function showResults(sorted){
+ 
+const top=sorted[0];
+ 
+const pct=Math.round(top.score*100);
+ 
+document.getElementById("flowerName").innerText=
+(SV[top.name]||top.name)+" / "+top.name;
+ 
+document.getElementById("confPct").innerText=pct+"%";
+ 
+document.getElementById("confBar").style.width=pct+"%";
+ 
+const rows=document.getElementById("scoreRows");
+ 
+rows.innerHTML="";
+ 
+sorted.forEach(item=>{
+ 
+const p=Math.round(item.score*100);
+ 
+const div=document.createElement("div");
+ 
+div.className="score";
+ 
+div.innerHTML=`
+${SV[item.name]||item.name} ${p}%
+<div style="background:#ddd;height:10px">
+<div style="height:10px;background:red;width:${p}%"></div>
+</div>
+`;
+ 
+rows.appendChild(div);
+ 
+});
+ 
+}
+ 
+loadModel();
+ 
 </script>
-
+ 
 </body>
 </html>
-```
